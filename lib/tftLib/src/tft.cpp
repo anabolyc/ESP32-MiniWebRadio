@@ -485,7 +485,7 @@ uint8_t TFT::getRotation(void) const{
     return _rotation;
 }
 
-void TFT::begin(uint8_t CS, uint8_t DC, uint8_t spi, uint8_t mosi, uint8_t miso, uint8_t sclk) {
+void TFT::begin(uint8_t CS, uint8_t DC, uint8_t spi, uint8_t mosi, uint8_t miso, uint8_t sclk, uint8_t reset) {
 
     // default is VSPI (VSPI_MISO 19, VSPI_MOSI 23, VSPI_SCLK 18)
     //            HSPI (HSPI_MISO 12, HSPI_MOSI 13, HSPI_SCLK 14)
@@ -507,12 +507,24 @@ void TFT::begin(uint8_t CS, uint8_t DC, uint8_t spi, uint8_t mosi, uint8_t miso,
 
 
     String info="";
-    TFT_CS = CS; TFT_DC = DC;
+    TFT_CS = CS; 
+    TFT_DC = DC; 
+    TFT_RES = reset;
 
     pinMode(TFT_DC, OUTPUT);
     digitalWrite(TFT_DC, LOW);
-    pinMode(TFT_CS, OUTPUT);
-    digitalWrite(TFT_CS, HIGH);
+
+    if (TFT_CS != 255) {
+        pinMode(TFT_CS, OUTPUT);
+        digitalWrite(TFT_CS, HIGH);
+    }
+
+    if (TFT_RES != 255) {
+        pinMode(TFT_RES, OUTPUT);
+        digitalWrite(TFT_RES, LOW);
+        delay(50);
+        digitalWrite(TFT_RES, HIGH);
+    }
 
     pinMode(16, OUTPUT); digitalWrite(16, HIGH); //GPIO TP_CS
     // log_i("DC=%d, CS=%d, MISO=%d, MOSI=%d, SCK=%d", TFT_DC, TFT_CS, TFT_MISO, TFT_MOSI, TFT_SCK);

@@ -10,7 +10,7 @@
     HW decoder VS1053 or
     SW decoder with external DAC over I2S
 
-    SD_MMC is mandatory
+    SD/SD_MMC or SPIFFS is mandatory
     IR remote is optional
 
 ***********************************************************************************************************************/
@@ -277,13 +277,13 @@ boolean saveStationsToNVS(){
     String X="", Cy="", StationName="", StreamURL="", currentLine="", tmp="";
     uint16_t cnt = 0;
     // StationList
-	if(!SD_MMC.exists("/stations.csv")){
-		SerialPrintfln(ANSI_ESC_RED "SD_MMC/stations.csv not found");
+	if(!FSCLASS.exists("/stations.csv")){
+		SerialPrintfln(ANSI_ESC_RED "SD/stations.csv not found");
 		return false;
 	}
 
-    File file = SD_MMC.open("/stations.csv");
-    if(file){  // try to read from SD_MMC
+    File file = FSCLASS.open("/stations.csv");
+    if(file){  // try to read from SD
         stations.clear();
         currentLine = file.readStringUntil('\n');             // read the headline
         while(file.available()){
@@ -329,14 +329,17 @@ boolean saveStationsToNVS(){
 *                                        T F T   B R I G H T N E S S                                                   *
 ***********************************************************************************************************************/
 void setTFTbrightness(uint8_t duty){ //duty 0...100 (min...max)
-    if(TFT_BL == -1) return;
+    if(TFT_BL == -1) 
+        return;
     ledcAttachPin(TFT_BL, 1);        //Configure variable led, TFT_BL pin to channel 1
     ledcSetup(1, 12000, 8);          // 12 kHz PWM and 8 bit resolution
     ledcWrite(1, duty * 2.55);
 }
+
 inline uint32_t getTFTbrightness(){
     return ledcRead(1);
 }
+
 inline uint8_t downBrightness(){
     uint8_t br; br = pref.getUShort("brightness");
     if(br>5) {
@@ -809,17 +812,17 @@ void display_sleeptime(int8_t ud){  // set sleeptimer
 
 boolean drawImage(const char* path, uint16_t posX, uint16_t posY, uint16_t maxWidth , uint16_t maxHeigth){
     const char* scImg = scaleImage(path);
-    if(!SD_MMC.exists(scImg)){
+    if(!FSCLASS.exists(scImg)){
         if(indexOf(scImg, "/.", 0)) return false; // empty filename
         SerialPrintfln(ANSI_ESC_RED "file \"%s\" not found", scImg);
         return false;
     }
     if(endsWith(scImg, "bmp")){
         // log_i("drawImage %s, x=%i, y=%i, mayWidth=%i, maxHeight=%i", scImg, posX, posY, maxWidth, maxHeigth);
-        return tft.drawBmpFile(SD_MMC, scImg, posX, posY, maxWidth, maxHeigth);
+        return tft.drawBmpFile(FSCLASS, scImg, posX, posY, maxWidth, maxHeigth);
     }
     if(endsWith(scImg, "jpg")){
-        return tft.drawJpgFile(SD_MMC, scImg, posX, posY, maxWidth, maxHeigth);
+        return tft.drawJpgFile(FSCLASS, scImg, posX, posY, maxWidth, maxHeigth);
     }
     return false; // neither jpg nor bmp
 }
@@ -828,8 +831,8 @@ boolean drawImage(const char* path, uint16_t posX, uint16_t posY, uint16_t maxWi
 ***********************************************************************************************************************/
 bool setAudioFolder(const char* audioDir){
     if(audioFile) audioFile.close();  // same as rewind()
-    if(!SD_MMC.exists(audioDir)){SerialPrintfln(ANSI_ESC_RED "%s not exist", audioDir); return false;}
-    audioFile = SD_MMC.open(audioDir);
+    if(!FSCLASS.exists(audioDir)){SerialPrintfln(ANSI_ESC_RED "%s not exist", audioDir); return false;}
+    audioFile = FSCLASS.open(audioDir);
     if(!audioFile.isDirectory()){SerialPrintfln(ANSI_ESC_RED "%s is not a directory", audioDir); return false;}
     return true;
 }
@@ -878,8 +881,8 @@ bool connectToWiFi(){
     String s_ssid = "", s_password = "", s_info = "";
     wifiMulti.addAP(_SSID, _PW);                // SSID and PW in code
     WiFi.setHostname("MiniWebRadio");
-    File file = SD_MMC.open("/networks.csv"); // try credentials given in "/networks.txt"
-    if(file){                                         // try to read from SD_MMC
+    File file = FSCLASS.open("/networks.csv"); // try credentials given in "/networks.txt"
+    if(file){                                         // try to read from SD
         String str = "";
         while(file.available()){
             str = file.readStringUntil('\n');         // read the line
@@ -982,26 +985,42 @@ void setup(){
     pref.begin("MiniWebRadio", false);  // instance of preferences for defaults (tone, volume ...)
     stations.begin("Stations", false);  // instance of preferences for stations (name, url ...)
 
-
-    tft.begin(TFT_CS, TFT_DC, VSPI);    // Init TFT interface
+    // Init TFT interface
+    #ifdef TFT_RES
+    tft.begin(TFT_CS, TFT_DC, VSPI, SPI_MOSI, SPI_MISO, SPI_SCK, TFT_RES);    
+    #else
+    tft.begin(TFT_CS, TFT_DC, VSPI);    
+    #endif
     tft.setFrequency(TFT_FREQUENCY);
     tft.setRotation(TFT_ROTATION);
     tp.setVersion(TP_VERSION);
     tp.setRotation(TP_ROTATION);
 
-    SerialPrintfln("setup: Init SD card");
+    SerialPrintfln("setup: Init Filesystem");
+    #if STORAGE_MODE==1
+    #if SD_MODE==0
+    // SD MMC
     pinMode(SD_MMC_D0, INPUT_PULLUP);
-    if(!SD_MMC.begin("/sdcard", true)){
+    if(!FSCLASS.begin("/sdcard", true))
+    #else
+    // SD SPI
+    if(!FSCLASS.begin(SD_CS, SPI, TFT_FREQUENCY, "/sdcard"))
+    #endif
+    #else 
+    // SPIFFS
+    if(!FSCLASS.begin("/sdcard"))
+    #endif
+    {
         clearAll();
         tft.setFont(_fonts[5]);
         tft.setTextColor(TFT_YELLOW);
         tft.setCursor(50,100);
-        tft.print("SD Card Mount Failed");
+        tft.print("Filesystem Mount Failed");
         setTFTbrightness(80);
-        SerialPrintfln(ANSI_ESC_RED "SD Card Mount Failed");
+        SerialPrintfln(ANSI_ESC_RED "Filesystem Mount Failed");
         while(1){};  // endless loop, MiniWebRadio does not work without SD
     }
-    SerialPrintfln(ANSI_ESC_WHITE "setup: SD card found");
+    SerialPrintfln(ANSI_ESC_WHITE "setup: Filesystem found");
 
     defaultsettings();  // first init
     setTFTbrightness(getBrightness());
@@ -1009,7 +1028,7 @@ void setup(){
     if(TFT_CONTROLLER > 3) SerialPrintfln(ANSI_ESC_RED "The value in TFT_CONTROLLER is invalid");
     drawImage("/common/MiniWebRadioV2.jpg", 0, 0); // Welcomescreen
     SerialPrintfln("setup: seek for stations.csv");
-    File file=SD_MMC.open("/stations.csv");
+    File file=FSCLASS.open("/stations.csv");
     if(!file){
         clearAll();
         tft.setFont(_fonts[5]);
@@ -1038,7 +1057,7 @@ void setup(){
     SerialPrintfln("setup: connected to " ANSI_ESC_CYAN "%s" ANSI_ESC_WHITE
                    ", IP address is " ANSI_ESC_CYAN "%s", WiFi.SSID().c_str(), _myIP);
 
-    ftpSrv.begin(SD_MMC, FTP_USERNAME, FTP_PASSWORD); //username, password for ftp.
+    ftpSrv.begin(FSCLASS, FTP_USERNAME, FTP_PASSWORD); //username, password for ftp.
 
     _f_rtc = rtc.begin(TZName);
     if(!_f_rtc){
@@ -1291,7 +1310,7 @@ void changeBtn_released(uint8_t btnNr){
     else                drawImage(_releaseBtn[btnNr], btnNr * _winButton.w , _winButton.y);
 }
 
-void savefile(const char* fileName, uint32_t contentLength){ //save the uploadfile on SD_MMC
+void savefile(const char* fileName, uint32_t contentLength){ //save the uploadfile on SD
     char fn[256];
 
     if(endsWith(fileName, "jpg")){
@@ -1299,7 +1318,7 @@ void savefile(const char* fileName, uint32_t contentLength){ //save the uploadfi
         strcat(fn, _prefix);
         if(!startsWith(fileName, "/")) strcat(fn, "/");
         strcat(fn, fileName);
-        if(webSrv.uploadB64image(SD_MMC, UTF8toASCII(fn), contentLength)){
+        if(webSrv.uploadB64image(FSCLASS, UTF8toASCII(fn), contentLength)){
             SerialPrintfln("save image " ANSI_ESC_CYAN "%s" ANSI_ESC_WHITE " to SD card was successfully", fn);
             webSrv.reply("OK");
         }
@@ -1313,7 +1332,7 @@ void savefile(const char* fileName, uint32_t contentLength){ //save the uploadfi
         else{
             strcpy(fn, fileName);
         }
-        if(webSrv.uploadfile(SD_MMC, UTF8toASCII(fn), contentLength)){
+        if(webSrv.uploadfile(FSCLASS, UTF8toASCII(fn), contentLength)){
             SerialPrintfln("save file " ANSI_ESC_CYAN "%s" ANSI_ESC_WHITE " to SD card was successfully", fn);
             webSrv.reply("OK");
         }
@@ -1401,8 +1420,8 @@ void changeState(int state){
         case RADIOico:{
             showHeadlineItem(RADIOico);
             _pressBtn[0] = "/btn/Button_Mute_Yellow.jpg";        _releaseBtn[0] =  _f_mute? "/btn/Button_Mute_Red.jpg":"/btn/Button_Mute_Green.jpg";
-            _pressBtn[1] = "/btn/Button_Volume_Down_Yellow.jpg"; _releaseBtn[1] = "/btn/Button_Volume_Down_Blue.jpg";
-            _pressBtn[2] = "/btn/Button_Volume_Up_Yellow.jpg";   _releaseBtn[2] = "/btn/Button_Volume_Up_Blue.jpg";
+            _pressBtn[1] = "/btn/Button_Vol_Down_Yellow.jpg"; _releaseBtn[1] = "/btn/Button_Vol_Down_Blue.jpg";
+            _pressBtn[2] = "/btn/Button_Vol_Up_Yellow.jpg";   _releaseBtn[2] = "/btn/Button_Vol_Up_Blue.jpg";
             _pressBtn[3] = "/btn/Button_Previous_Yellow.jpg";    _releaseBtn[3] = "/btn/Button_Previous_Green.jpg";
             _pressBtn[4] = "/btn/Button_Next_Yellow.jpg";        _releaseBtn[4] = "/btn/Button_Next_Green.jpg";
             clearTitle();
@@ -1453,8 +1472,8 @@ void changeState(int state){
             _pressBtn[0] = "/btn/Bell_Yellow.jpg";               _releaseBtn[0] = "/btn/Bell_Green.jpg";
             _pressBtn[1] = "/btn/Radio_Yellow.jpg";              _releaseBtn[1] = "/btn/Radio_Green.jpg";
             _pressBtn[2] = "/btn/Button_Mute_Yellow.jpg";        _releaseBtn[2] = _f_mute? "/btn/Button_Mute_Red.jpg":"/btn/Button_Mute_Green.jpg";
-            _pressBtn[3] = "/btn/Button_Volume_Down_Yellow.jpg"; _releaseBtn[3] = "/btn/Button_Volume_Down_Blue.jpg";
-            _pressBtn[4] = "/btn/Button_Volume_Up_Yellow.jpg";   _releaseBtn[4] = "/btn/Button_Volume_Up_Blue.jpg";
+            _pressBtn[3] = "/btn/Button_Vol_Down_Yellow.jpg"; _releaseBtn[3] = "/btn/Button_Vol_Down_Blue.jpg";
+            _pressBtn[4] = "/btn/Button_Vol_Up_Yellow.jpg";   _releaseBtn[4] = "/btn/Button_Vol_Up_Blue.jpg";
             for(int i = 0; i < 5 ; i++) {drawImage(_releaseBtn[i], i * _winButton.w, _winButton.y);}
             break;
         }
@@ -1487,8 +1506,8 @@ void changeState(int state){
         case PLAYERico:{
             showHeadlineItem(PLAYERico);
             _pressBtn[0] = "/btn/Button_Mute_Yellow.jpg";        _releaseBtn[0] = _f_mute? "/btn/Button_Mute_Red.jpg":"/btn/Button_Mute_Green.jpg";
-            _pressBtn[1] = "/btn/Button_Volume_Down_Yellow.jpg"; _releaseBtn[1] = "/btn/Button_Volume_Down_Blue.jpg";
-            _pressBtn[2] = "/btn/Button_Volume_Up_Yellow.jpg";   _releaseBtn[2] = "/btn/Button_Volume_Up_Blue.jpg";
+            _pressBtn[1] = "/btn/Button_Vol_Down_Yellow.jpg"; _releaseBtn[1] = "/btn/Button_Vol_Down_Blue.jpg";
+            _pressBtn[2] = "/btn/Button_Vol_Up_Yellow.jpg";   _releaseBtn[2] = "/btn/Button_Vol_Up_Blue.jpg";
             _pressBtn[3] = "/btn/MP3_Yellow.jpg";                _releaseBtn[3] = "/btn/MP3_Green.jpg";
             _pressBtn[4] = "/btn/Radio_Yellow.jpg";              _releaseBtn[4] = "/btn/Radio_Green.jpg";
             for(int i = 0; i < 5 ; i++) {drawImage(_releaseBtn[i], i * _winButton.w, _winButton.y);}
@@ -2151,9 +2170,9 @@ void WEBSRV_onCommand(const String cmd, const String param, const String arg){  
 
     if(cmd == "get_decoder"){       webSrv.send( DECODER? "decoder=s": "decoder=h"); return;}
 
-    if(cmd == "favicon.ico"){       webSrv.streamfile(SD_MMC, "/favicon.ico"); return;}
+    if(cmd == "favicon.ico"){       webSrv.streamfile(FSCLASS, "/favicon.ico"); return;}
 
-    if(cmd.startsWith("SD")){       str = cmd.substring(2); webSrv.streamfile(SD_MMC, scaleImage(str.c_str())); return;}
+    if(cmd.startsWith("SD")){       str = cmd.substring(2); webSrv.streamfile(FSCLASS, scaleImage(str.c_str())); return;}
 
     if(cmd == "change_state"){      changeState(param.toInt()); return;}
 

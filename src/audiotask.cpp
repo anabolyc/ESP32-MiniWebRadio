@@ -84,7 +84,7 @@ void audioTask(void *parameter) {
             }
             else if(audioRxTaskMessage.cmd == CONNECTTOFS){
                 audioTxTaskMessage.cmd = CONNECTTOFS;
-                audioTxTaskMessage.ret = vs1053.connecttoFS(SD_MMC, audioRxTaskMessage.txt1, audioRxTaskMessage.value1);
+                audioTxTaskMessage.ret = vs1053.connecttoFS(FSCLASS, audioRxTaskMessage.txt1, audioRxTaskMessage.value1);
                 xQueueSend(audioGetQueue, &audioTxTaskMessage, portMAX_DELAY);
             }
             else if(audioRxTaskMessage.cmd == GET_VOLUME){
@@ -272,7 +272,7 @@ void audioTask(void *parameter) {
             }
             else if(audioRxTaskMessage.cmd == CONNECTTOFS){
                 audioTxTaskMessage.cmd = CONNECTTOFS;
-                audioTxTaskMessage.ret = audio.connecttoFS(SD_MMC, audioRxTaskMessage.txt1, audioRxTaskMessage.value1);
+                audioTxTaskMessage.ret = audio.connecttoFS(FSCLASS, audioRxTaskMessage.txt1, audioRxTaskMessage.value1);
                 xQueueSend(audioGetQueue, &audioTxTaskMessage, portMAX_DELAY);
             }
             else if(audioRxTaskMessage.cmd == GET_VOLUME){

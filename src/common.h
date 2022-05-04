@@ -3,16 +3,18 @@
 
 #pragma once
 
-#define _SSID               "mySSID"                        // Your WiFi credentials here
-#define _PW                 "myWiFiPassword"
+#define _SSID               "wifi-12-private"                        // Your WiFi credentials here
+#define _PW                 "9263777101"
 #define TZName              "CET-1CEST,M3.5.0,M10.5.0/3"    // Timezone (more TZNames in "rtime.cpp")
 #define DECODER             1                               // (0)VS1053 , (1)MAX98357A PCM5102A... (2)AC101 (3)ES8388 (4)WM8978
-#define TFT_CONTROLLER      3                               // (0)ILI9341, (1)HX8347D, (2)ILI9486, (3)ILI9488
+#define TFT_CONTROLLER      0                               // (0)ILI9341, (1)HX8347D, (2)ILI9486, (3)ILI9488
 #define DISPLAY_INVERSION   0                               // (0) off (1) on
 #define TFT_FREQUENCY       40000000                        // 27000000, 40000000, 80000000
-#define TFT_ROTATION        3                               // 1 or 3 (landscape)
-#define TP_VERSION          4                               // (0)ILI9341, (1)ILI9341RPI, (2)HX8347D, (3)ILI9486RPI, (4)ILI9488
-#define TP_ROTATION         3                               // 1 or 3 (landscape)
+#define TFT_ROTATION        1                               // 1 or 3 (landscape)
+#define TP_VERSION          0                               // (0)ILI9341, (1)ILI9341RPI, (2)HX8347D, (3)ILI9486RPI, (4)ILI9488
+#define TP_ROTATION         TFT_ROTATION                    // 1 or 3 (landscape)
+#define STORAGE_MODE        0                               // 0 - spiffs, 1 - sdcard
+#define SD_MODE             1                               // 0 - MMC mode, 1 - SPI mode
 #define AUDIOTASK_CORE      0                               // 0 or 1
 #define AUDIOTASK_PRIO      2                               // 0 ... 24  Priority of the Task (0...configMAX_PRIORITIES -1)
 #define FTP_USERNAME        "esp32"                         // user and pw in FTP Client
@@ -24,7 +26,18 @@
 #include <Preferences.h>
 #include <Ticker.h>
 #include <SPI.h>
+#if STORAGE_MODE==1
+#if SD_MODE==0
 #include <SD_MMC.h>
+#define FSCLASS SD_MMC
+#else
+#include <SD.h>
+#define FSCLASS SD
+#endif
+#else
+#include <SPIFFS.h>
+#define FSCLASS SPIFFS
+#endif
 #include <FS.h>
 #include <Wire.h>
 #include <WiFiClient.h>
@@ -35,20 +48,31 @@
 #include "IR.h"
 #include "tft.h"
 #include "ESP32FtpServer.h"
+#if DECODER==2
 #include "AC101.h"
+#endif
+#if DECODER==3
 #include "ES8388.h"
+#endif
+#if DECODER==4
 #include "WM8978.h"
+#endif
 
 // Digital I/O used
-    #define TFT_CS        22
-    #define TFT_DC        21
-    #define TFT_BL        32  // at -1 the brightness menu is not displayed
-    #define TP_IRQ        39  // VN
-    #define TP_CS          5
+    #define TFT_CS        5
+    #define TFT_DC        4
+    #define TFT_RES       32
+    #define TFT_BL        -1  // at -1 the brightness menu is not displayed
+    #define TP_IRQ        21  // VN
+    #define TP_CS          2
+#if SD_MODE==0                // SD in MMC mode
     #define SD_MMC_D0      2  // cannot be changed
     #define SD_MMC_CLK    14  // cannot be changed
     #define SD_MMC_CMD    15  // cannot be changed
-    #define IR_PIN        35
+#else
+    #define SD_CS         27  // SD CS in SPI mode
+#endif
+    #define IR_PIN         0
     #define SPI_MOSI      23  // TFT and TP (VSPI)
     #define SPI_MISO      19  // TFT and TP (VSPI)
     #define SPI_SCK       18  // TFT and TP (VSPI)
@@ -60,11 +84,11 @@
     #define VS1053_MISO   34  // VS1053     (HSPI)
     #define VS1053_SCK    12  // VS1053     (HSPI) (sometimes we need a 1k resistor against ground)
 #else
-    #define I2S_DOUT      25
+    #define I2S_DOUT      22
     #define I2S_DIN       -1  // pin not used
-    #define I2S_BCLK      27
-    #define I2S_LRC       26
-    #define I2S_MCLK       0  // mostly not used
+    #define I2S_BCLK      26
+    #define I2S_LRC       25
+    #define I2S_MCLK      -1  // mostly not used
 #endif
     #define I2C_DATA      -1  // some DACs are controlled via I2C
     #define I2C_CLK       -1

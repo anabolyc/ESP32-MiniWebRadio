@@ -1360,10 +1360,10 @@ function getnetworks () { // tab Config: load the connected WiFi network
     <img src="SD/png/Button_Previous_Blue.png"      width="1" height="1" loading="eager" alt="Image 12" />
     <img src="SD/png/Button_Next_Green.png"         width="1" height="1" loading="eager" alt="Image 13" />
     <img src="SD/png/Button_Next_Yellow.png"        width="1" height="1" loading="eager" alt="Image 14" />
-    <img src="SD/png/Button_Volume_Down_Blue.png"   width="1" height="1" loading="eager" alt="Image 15" />
-    <img src="SD/png/Button_Volume_Down_Yellow.png" width="1" height="1" loading="eager" alt="Image 16" />
-    <img src="SD/png/Button_Volume_Up_Blue.png"     width="1" height="1" loading="eager" alt="Image 17" />
-    <img src="SD/png/Button_Volume_Up_Yellow.png"   width="1" height="1" loading="eager" alt="Image 18" />
+    <img src="SD/png/Button_Vol_Down_Blue.png"   width="1" height="1" loading="eager" alt="Image 15" />
+    <img src="SD/png/Button_Vol_Down_Yellow.png" width="1" height="1" loading="eager" alt="Image 16" />
+    <img src="SD/png/Button_Vol_Up_Blue.png"     width="1" height="1" loading="eager" alt="Image 17" />
+    <img src="SD/png/Button_Vol_Up_Yellow.png"   width="1" height="1" loading="eager" alt="Image 18" />
     <img src="SD/png/Button_Mute_Green.png"         width="1" height="1" loading="eager" alt="Image 19" />
     <img src="SD/png/Button_Mute_Yellow.png"        width="1" height="1" loading="eager" alt="Image 20" />
     <img src="SD/png/Button_Mute_Red.png"           width="1" height="1" loading="eager" alt="Image 21" />
@@ -1525,17 +1525,17 @@ function getnetworks () { // tab Config: load the connected WiFi network
     </div>
     <div style="height: 66px; display: flex;">
       <div style="flex: 0 0 210px;">
-        <img src="SD/png/Button_Volume_Down_Blue.png" alt="Vol_down"
-                          onmousedown="this.src='SD/png/Button_Volume_Down_Yellow.png'"
-                          ontouchstart="this.src='SD/png/Button_Volume_Down_Yellow.png'"
-                          onmouseup="this.src='SD/png/Button_Volume_Down_Blue.png'"
-                          ontouchend="this.src='SD/png/Button_Volume_Down_Blue.png'"
+        <img src="SD/png/Button_Vol_Down_Blue.png" alt="Vol_down"
+                          onmousedown="this.src='SD/png/Button_Vol_Down_Yellow.png'"
+                          ontouchstart="this.src='SD/png/Button_Vol_Down_Yellow.png'"
+                          onmouseup="this.src='SD/png/Button_Vol_Down_Blue.png'"
+                          ontouchend="this.src='SD/png/Button_Vol_Down_Blue.png'"
                           onclick="httpGet('downvolume', 1)" />
-        <img src="SD/png/Button_Volume_Up_Blue.png" alt="Vol_up"
-                          onmousedown="this.src='SD/png/Button_Volume_Up_Yellow.png'"
-                          ontouchstart="this.src='SD/png/Button_Volume_Up_Yellow.png'"
-                          onmouseup="this.src='SD/png/Button_Volume_Up_Blue.png'"
-                          ontouchend="this.src='SD/png/Button_Volume_Up_Blue.png'"
+        <img src="SD/png/Button_Vol_Up_Blue.png" alt="Vol_up"
+                          onmousedown="this.src='SD/png/Button_Vol_Up_Yellow.png'"
+                          ontouchstart="this.src='SD/png/Button_Vol_Up_Yellow.png'"
+                          onmouseup="this.src='SD/png/Button_Vol_Up_Blue.png'"
+                          ontouchend="this.src='SD/png/Button_Vol_Up_Blue.png'"
                           onclick="httpGet('upvolume', 1)" />
         <img id="Mute" src="SD/png/Button_Mute_Green.png" alt="Mute"
                           onmousedown="this.src='SD/png/Button_Mute_Yellow.png'"

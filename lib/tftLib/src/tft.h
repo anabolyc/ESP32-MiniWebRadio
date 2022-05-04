@@ -5,9 +5,8 @@
 #pragma once
 
 #include "Arduino.h"
-#include "FS.h"
 #include "SPI.h"
-#include "SD.h"
+#include "FS.h"
 #include "vector"
 using namespace std;
 
@@ -95,7 +94,7 @@ class TFT : public Print {
         TFT(uint8_t TFT_id = 0, uint8_t dispInv = 0);
         virtual ~TFT(){}
 
-        void begin(uint8_t CS, uint8_t DC, uint8_t spi = VSPI, uint8_t mosi = 23, uint8_t miso = 19, uint8_t sclk = 18);
+        void begin(uint8_t CS, uint8_t DC, uint8_t spi = VSPI, uint8_t mosi = 23, uint8_t miso = 19, uint8_t sclk = 18, uint8_t reset = 255);
         void      setFrequency(uint32_t f);
         void      setRotation(uint8_t r);
         bool      setCursor(uint16_t x, uint16_t y);
@@ -222,6 +221,7 @@ virtual size_t    write(const uint8_t *buffer, size_t size);
         uint8_t  TFT_SCK = 18;
         uint8_t  TFT_MISO= 19;
         uint8_t  TFT_MOSI= 23;
+        uint8_t   TFT_RES = 255;
         uint8_t  buf[1024];
         char     chbuf[256];
 
